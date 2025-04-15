@@ -38,7 +38,6 @@ async fn get_result() -> impl Responder {
 }
 
 async fn get_credits(movie_id: web::Path<String>) -> impl Responder {
-    println!("yoyo waddup");
     let id = movie_id.into_inner();
     let curl_cmd = format!(
         "curl https://api.themoviedb.org/3/movie/{}/credits?api_key={}",

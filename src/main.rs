@@ -142,6 +142,11 @@ async fn get_result() -> String {
                                 .get_mut("results")
                                 .and_then(|v| v.as_array_mut())
                                 .map(|arr| arr.push(Value::Object(movie_obj.clone())));
+
+                            if let Some(arr) = returning.get_mut("results").and_then(|v| v.as_array_mut()) {
+                                arr.push(Value::Object(movie_obj.clone()));
+                                arr.push(json!("hello"));
+                            }
                         }
                     }
                 }
@@ -209,7 +214,7 @@ async fn main() -> std::io::Result<()> {
                     .allowed_header("ngrok-skip-browser-warning")
                     .max_age(3600)
             )
-            .route("/credits/{id}", web::get().to(get_credits))
+            //.route("/credits/{id}", web::get().to(get_credits))
             .route("/movie", web::get().to(get_result))
     })
         .bind_rustls_021("0.0.0.0:8443", tls_config)?

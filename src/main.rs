@@ -13,7 +13,7 @@ mod api_key;
 
 const API_KEY: &str = api_key::API_KEY;
 
-async fn get_result() -> impl Responder {
+async fn get_page() -> Value {
     let mut rng = rand::thread_rng();
 
     let random_page = rng.gen_range(1..=100);
@@ -31,19 +31,137 @@ async fn get_result() -> impl Responder {
         .expect("Failed to execute command");
 
     let stdout = String::from_utf8_lossy(&output.stdout);
-    let stdout_str: &str = &stdout;
-    let result: Cow<'_, str> = Cow::Borrowed(&stdout_str);
+    let json_rsp: Value = serde_json::from_str(&stdout).expect("Invalid JSON");
 
-    format!("Result: {}", result)
+    return json_rsp;
 }
 
-async fn get_credits(movie_id: web::Path<String>) -> impl Responder {
-    let id = movie_id.into_inner();
+async fn get_result() -> String {
+    let json_rsp: Value = get_page().await;
+
+    let mut returning: Value = json!({
+        "results": []
+    });
+
+    //for x in 0..JSON_RSP["results"]
+    //json_rsp.get("results").iter().for_each(|movie| {
+    if let Some(results) = json_rsp.get("results").and_then(|v| v.as_array()) {
+        for movie in results {
+            if movie != &Value::Null
+                && movie
+                    .get("success")
+                    .and_then(|v| v.as_bool()).unwrap_or(false)
+                && !movie
+                    .get("adult")
+                    .and_then(|v| v.as_bool()).unwrap_or(false)
+                && movie.get("poster_path").is_some()
+                && movie
+                    .get("original_language")
+                    .and_then(|v| v.as_str())
+                    .map(|s| s == "en")
+                    .unwrap_or(false)
+                && movie
+                    .get("vote_count")
+                    .and_then(|v| v.as_i64())
+                    .map(|n| n > 1500)
+                    .unwrap_or(false)
+                && movie
+                    .get("release_date")
+                    .and_then(|v| v.as_str())
+                    .and_then(|s| s.split('-').next())
+                    .and_then(|year_str| year_str.parse::<i32>().ok())
+                    .map(|year| year < 1965)
+                    .unwrap_or(false)
+            {
+                let id = movie.get("id").map(|v| v.to_string()).unwrap_or("unknown".to_string());
+                let mut _movie: Value = movie.clone();
+                let credits: Value = get_credits(id).await;
+                //returning.get_mut("results").push(movie.clone());
+                if !credits.is_null() {
+                    // preparing an empty json object which will be inserted for the movie
+                    let mut _credits: Value = json!({
+                        "crew": [],
+                        "cast": []
+                    });
+
+                    // putting the top 3 cast members into the returning
+                    let mut nuf_info = true;
+                    if let Some(array) = credits.get("cast").and_then(|v| v.as_array()) {
+                        for i in 0..3 {
+                            if let Some(item) = array.get(i) {
+                                //let item: Value = array.get(i).expect("No element at index").clone();
+                                _credits
+                                    .get_mut("cast")
+                                    .and_then(|v| v.as_array_mut())
+                                    .map(|arr| arr.push(item.clone()));
+                            } else {
+                                nuf_info = false;
+                            }
+                        }
+                    } else {
+                        nuf_info = false;
+                    }
+
+                    if let Some(crew) = credits.get("crew").and_then(|v| v.as_array()) {
+                        let mut director: Option<Value> = None;
+                        let mut found = false;
+                        let mut maybe_found = false;
+                        for member in crew {
+                            if let Some("Directing") = member.get("department").and_then(|v| v.as_str()) {
+                                // this guy is definitely the director, so we should put him
+                                // straight into returning.
+                                _credits.get_mut("crew")
+                                    .and_then(|v| v.as_array_mut())
+                                    .map(|arr| arr.push(member.clone()));
+                                found = true;
+                                break;
+                            } else if let Some("Directing") = member.get("known_for_department").and_then(|v| v.as_str()) {
+                                // this guy could be the director, so we save him, but we hope we
+                                // can find a definite director
+                                director = Some(member.clone());
+                                maybe_found = true;
+                            }
+                        }
+                        // if we don't have a definite director, but we do have a maybe director,
+                        // we push the maybe director
+                        // otherwise we don't have enough info to use this movie
+                        if !found && maybe_found {
+                            if let Some(director) = director {
+                                _credits.get_mut("crew")
+                                    .and_then(|v| v.as_array_mut())
+                                    .map(|arr| arr.push(director.clone()));
+                            }
+                        } else {
+                            nuf_info = false;
+                        }
+                    } else {
+                        nuf_info = false;
+                    }
+
+                    if let Some(movie_obj) = _movie.as_object_mut() {
+                        if nuf_info {
+                            movie_obj.insert("credits".to_string(), credits);
+                            returning
+                                .get_mut("results")
+                                .and_then(|v| v.as_array_mut())
+                                .map(|arr| arr.push(Value::Object(movie_obj.clone())));
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    format!("Result: {}", serde_json::to_string(&returning).expect("ERROR"))
+}
+
+async fn get_credits(movie_id: String) -> Value {
+    let id = movie_id;
     let curl_cmd = format!(
         "curl https://api.themoviedb.org/3/movie/{}/credits?api_key={}",
         id,
         API_KEY
-        );
+    );
 
     let output = Command::new("sh")
         .arg("-c")
@@ -52,10 +170,12 @@ async fn get_credits(movie_id: web::Path<String>) -> impl Responder {
         .expect("Failed to execute command");
 
     let stdout = String::from_utf8_lossy(&output.stdout);
-    let stdout_str: &str = &stdout;
-    let result: Cow<'_, str> = Cow::Borrowed(&stdout_str);
-    println!("{}", result);
-    format!("Result: {}", result)
+    //let stdout_str: &str = &stdout;
+    //let result: Cow<'_, str> = Cow::Borrowed(&stdout_str);
+    //println!("{}", result);
+    //format!("Result: {}", result)
+    //
+    return serde_json::from_str(&stdout).expect("Invalid JSON");
 }
 
 fn load_tls_config() -> ServerConfig {
@@ -95,9 +215,9 @@ async fn main() -> std::io::Result<()> {
             .route("/credits/{id}", web::get().to(get_credits))
             .route("/movie", web::get().to(get_result))
     })
-    .bind_rustls_021("0.0.0.0:8443", tls_config)?
+        .bind_rustls_021("0.0.0.0:8443", tls_config)?
         .run()
-        .await
+    .await
 }
 
 

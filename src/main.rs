@@ -48,12 +48,9 @@ async fn get_result() -> String {
     if let Some(results) = json_rsp.get("results").and_then(|v| v.as_array()) {
         for movie in results {
             if movie != &Value::Null
-                && movie
-                    .get("success")
-                    .and_then(|v| v.as_bool()).unwrap_or(false)
                 && !movie
                     .get("adult")
-                    .and_then(|v| v.as_bool()).unwrap_or(false)
+                    .and_then(|v| v.as_bool()).unwrap_or(true)
                 && movie.get("poster_path").is_some()
                 && movie
                     .get("original_language")

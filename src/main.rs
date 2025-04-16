@@ -145,12 +145,14 @@ async fn get_result() -> String {
 
                             if let Some(arr) = returning.get_mut("results").and_then(|v| v.as_array_mut()) {
                                 arr.push(Value::Object(movie_obj.clone()));
-                                arr.push(json!("hello"));
                             }
                         }
                     }
                 }
             }
+        }
+        if let Some(arr) = returning.get_mut("results").and_then(|v| v.as_array_mut()) {
+            arr.push(json!("hello"));
         }
     }
 

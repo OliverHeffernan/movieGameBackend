@@ -37,7 +37,7 @@ async fn get_page() -> Value {
     return json_rsp;
 }
 
-async fn get_result() -> String {
+async fn get_result() -> impl Responder {
     let json_rsp: Value = get_page().await;
 
     let mut returning: Value = json!({
@@ -46,6 +46,7 @@ async fn get_result() -> String {
 
     //for x in 0..JSON_RSP["results"]
     //json_rsp.get("results").iter().for_each(|movie| {
+    let mut num_loaded = 0;
     if let Some(results) = json_rsp.get("results").and_then(|v| v.as_array()) {
         for movie in results {
             if movie != &Value::Null
@@ -147,18 +148,21 @@ async fn get_result() -> String {
 
                             if let Some(arr) = returning.get_mut("results").and_then(|v| v.as_array_mut()) {
                                 arr.push(Value::Object(movie_obj.clone()));
+                                num_loaded += 1;
                             }
                         }
                     }
                 }
             }
         }
-        if let Some(arr) = returning.get_mut("results").and_then(|v| v.as_array_mut()) {
-            arr.push(json!("hello"));
-        }
     }
-
-    format!("Result: {}", serde_json::to_string(&returning).expect("ERROR"))
+    if num_loaded > 0 {
+        format!("Result: {}", serde_json::to_string(&returning).expect("ERROR"))
+    } else {
+        // if nothing was loaded, try again
+        println!("trying again");
+        format!("{}", get_page().await)
+    }
 }
 
 async fn get_credits(movie_id: String) -> Value {

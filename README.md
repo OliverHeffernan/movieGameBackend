@@ -1,4 +1,4 @@
-#movieGameBackend
+# movieGameBackend
 This is a backend for a simple "guess the movie game".
 
 The backend is built in Rust, and makes API requests to TMDb, processes the data, and sends this data in JSON format back to the front end.

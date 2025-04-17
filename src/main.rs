@@ -5,10 +5,9 @@ use rustls_pemfile::{certs, pkcs8_private_keys};
 use std::fs::File;
 use std::io::BufReader;
 use std::process::Command;
-//use std::borrow::Cow;
 use rand::Rng;
 use serde_json::{Value, /*from_str,*/ json};
-use tokio::runtime::Runtime;
+//use tokio::runtime::Runtime;
 
 mod api_key;
 
@@ -84,7 +83,7 @@ fn filter(movie: &Value) -> bool {
 ///     get_credits
 ///     include_cast_members
 ///     find_director_name
-async fn get_result() -> String {
+async fn get_result() -> impl Responder {
     // get the response from the API request
     let json_rsp: Value = get_page().await;
 
@@ -241,7 +240,6 @@ fn load_tls_config() -> ServerConfig {
         .unwrap()
 }
 
-/*
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     let tls_config = load_tls_config();
@@ -264,11 +262,12 @@ async fn main() -> std::io::Result<()> {
         .run()
     .await
 }
-*/
 
+/*
 //just testing the backend function specifically, leaving the server code for now
 fn main() {
     let rt = Runtime::new().unwrap();
     let result = rt.block_on(get_result());
     println!("{}", result);
 }
+*/

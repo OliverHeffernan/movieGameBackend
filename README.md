@@ -7,5 +7,5 @@ Processing includes:
  - Add the top 3 cast members names, so that they can be used as hints in the game.
     - the same for the director.
 
-Checkout the hosted front end [[here | https://oliverheffernan.github.io/movieGame/dist/index.html]]
-Or checkout the front end's source code [[here | https://github.com/OliverHeffernan/movieGame]]
+Checkout the hosted front end [here](https://oliverheffernan.github.io/movieGame/dist/index.html)
+Or checkout the front end's source code [here](https://github.com/OliverHeffernan/movieGame)

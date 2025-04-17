@@ -132,7 +132,6 @@ async fn get_result() -> impl Responder {
                             }
                         } else if !found {
                             nuf_info = false;
-                            println!("nuf info 3");
                         }
                     } else {
                         nuf_info = false;
@@ -157,7 +156,7 @@ async fn get_result() -> impl Responder {
         }
     }
     if num_loaded > 0 {
-        format!("Result: {}", serde_json::to_string(&returning).expect("ERROR"))
+        format!("{}", serde_json::to_string(&returning).expect("ERROR"))
     } else {
         // if nothing was loaded, try again
         println!("trying again");
@@ -229,7 +228,6 @@ async fn main() -> std::io::Result<()> {
         .run()
     .await
 }
-
 
 //just testing the backend function specifically, leaving the server code for now
 /*

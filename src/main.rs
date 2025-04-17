@@ -8,7 +8,7 @@ use std::process::Command;
 //use std::borrow::Cow;
 use rand::Rng;
 use serde_json::{Value, /*from_str,*/ json};
-use tokio::runtime::Runtime;
+//use tokio::runtime::Runtime;
 
 mod api_key;
 
@@ -37,7 +37,7 @@ async fn get_page() -> Value {
     return json_rsp;
 }
 
-async fn get_result() -> String {
+async fn get_result() -> impl Responder {
     let json_rsp: Value = get_page().await;
 
     let mut returning: Value = json!({
@@ -206,7 +206,6 @@ fn load_tls_config() -> ServerConfig {
         .unwrap()
 }
 
-/*
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     let tls_config = load_tls_config();
@@ -229,11 +228,12 @@ async fn main() -> std::io::Result<()> {
         .run()
     .await
 }
-*/
 
 //just testing the backend function specifically, leaving the server code for now
+/*
 fn main() {
     let rt = Runtime::new().unwrap();
     let result = rt.block_on(get_result());
     println!("{}", result);
 }
+*/

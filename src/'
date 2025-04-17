@@ -72,9 +72,9 @@ async fn get_result() -> String {
                     .map(|year| year < 1965)
                     .unwrap_or(true)
             {
+                println!("skipped {}", movie.get("name").as_str());
                 continue;
             }
-            num_loaded += 1;
 
             println!("{}", movie.get("original_language").and_then(|v| v.as_str()).unwrap_or("yo"));
             let id = movie.get("id").map(|v| v.to_string()).unwrap_or("unknown".to_string());
@@ -91,16 +91,11 @@ async fn get_result() -> String {
                 continue;
             }
 
-            let Some(director_name) = find_director_name(&credits) else {
+            let Some(director_name) = find_director_name(movie) else {
                 continue
             };
-
             if let Some(obj) = _movie.as_object_mut() {
                 obj.insert("director".to_string(), Value::String(director_name.to_string()));
-            }
-
-            if let Some(results_array) = returning.get_mut("results").and_then(|v| v.as_array_mut()) {
-                results_array.push(_movie);
             }
         }
     }
@@ -108,6 +103,7 @@ async fn get_result() -> String {
         format!("{}", serde_json::to_string(&returning).expect("ERROR"))
     } else {
         // if nothing was loaded, try again
+        //println!("trying again");
         format!("{}", get_page().await)
     }
 }
@@ -138,8 +134,8 @@ impl MovieExt for Value {
 fn find_director_name(value: &Value) -> Option<String> {
     if let Some(crew_array) = value.get("crew").and_then(|v| v.as_array()) {
         for member in crew_array {
-            if let Some(role) = member.get("job").and_then(|r| r.as_str()) {
-                if role == "Director" {
+            if let Some(role) = member.get("role").and_then(|r| r.as_str()) {
+                if role == "Directing" {
                     if let Some(name) = member.get("name").and_then(|n| n.as_str()) {
                         return Some(name.to_string());
                     }
@@ -147,7 +143,7 @@ fn find_director_name(value: &Value) -> Option<String> {
             }
         }
     }
-    return None
+    None
 }
 
 async fn get_credits(id: String) -> Value {

@@ -119,18 +119,23 @@ trait MovieExt {
 impl MovieExt for Value {
     fn include_cast_members(&mut self, credits: &Value) -> Option<&mut Value> {
         if let Some(cast_array) = credits.get("cast").and_then(|v| v.as_array()) {
+            println!("1");
             if let Some(mov) = self.as_object_mut() {
                 mov.insert("cast".to_string(), Value::Array(vec![]));
             }
             for i in 0..3 {
-                if let Some(name) = cast_array.get(i).and_then(|r| r.as_str()) {
+                println!("2");
+                if let Some(name) = cast_array.get(i).and_then(|r| r.get("name")).and_then(|n| n.as_str()) {
                     self.get_mut("cast")
                         .and_then(|v| v.as_array_mut())
                         .map(|arr| arr.push(Value::String(name.to_string())));
+                    println!("3");
                 }
             }
+            println!("4");
             return Some(self)
         }
+        println!("5");
         return None
     }
 }

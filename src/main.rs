@@ -1,9 +1,10 @@
-use actix_web::{web, App, HttpServer, Responder};
-use actix_cors::Cors;
-use rustls::{ServerConfig, Certificate, PrivateKey};
-use rustls_pemfile::{certs, pkcs8_private_keys};
-use std::fs::File;
-use std::io::BufReader;
+//use actix_web::{web, App, HttpServer, Responder};
+use actix_web::Responder;
+//use actix_cors::Cors;
+//use rustls::{ServerConfig, Certificate, PrivateKey};
+//use rustls_pemfile::{certs, pkcs8_private_keys};
+//use std::fs::File;
+//use std::io::BufReader;
 use std::process::Command;
 use rand::Rng;
 use serde_json::{Value, /*from_str,*/ json};
@@ -65,7 +66,7 @@ fn filter(movie: &Value) -> bool {
     || movie
         .get("vote_count")
         .and_then(|v| v.as_i64())
-        .map(|n| n < 1500)
+        .map(|n| n < 2000)
         .unwrap_or(false)
     // only include movies that were released after 1965
     || movie
@@ -221,6 +222,7 @@ async fn get_credits(id: String) -> Value {
     }
 }
 
+/*
 fn load_tls_config() -> ServerConfig {
     let cert_file = &mut BufReader::new(File::open("cert.pem").unwrap());
     let key_file = &mut BufReader::new(File::open("key.pem").unwrap());
@@ -239,7 +241,9 @@ fn load_tls_config() -> ServerConfig {
         .with_single_cert(cert_chain, key)
         .unwrap()
 }
+*/
 
+/*
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     let tls_config = load_tls_config();
@@ -261,6 +265,25 @@ async fn main() -> std::io::Result<()> {
         .bind_rustls_021("0.0.0.0:8443", tls_config)?
         .run()
     .await
+}
+*/
+
+fn main() {
+    let routes = rusty_api::Routes::new()
+        .add_route("/movie", get_result);
+
+    rusty_api::Api::new()
+        .certs("cert.pem", "key.pem")
+        .rate_limit(5, 20)
+        .bind("0.0.0.0", 8443)
+        .configure_routes(routes)
+        .configure_cors(|| {
+            rusty_api::Cors::default()
+                .allowed_origin("https://oliverheffernan.github.io")
+                .allow_any_method()
+                .allowed_header("ngrok-skip-browser-warning")
+        })
+        .start();
 }
 
 /*

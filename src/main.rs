@@ -5,9 +5,10 @@ use rustls_pemfile::{certs, pkcs8_private_keys};
 use std::fs::File;
 use std::io::BufReader;
 use std::process::Command;
-use std::borrow::Cow;
+//use std::borrow::Cow;
 use rand::Rng;
-use serde_json::{Value, from_str, json};
+use serde_json::{Value, /*from_str,*/ json};
+//use tokio::runtime::Runtime;
 
 mod api_key;
 
@@ -128,8 +129,9 @@ async fn get_result() -> String {
                                     .and_then(|v| v.as_array_mut())
                                     .map(|arr| arr.push(director.clone()));
                             }
-                        } else {
+                        } else if !found {
                             nuf_info = false;
+                            println!("nuf info 3");
                         }
                     } else {
                         nuf_info = false;
@@ -225,3 +227,11 @@ async fn main() -> std::io::Result<()> {
 }
 
 
+//just testing the backend function specifically, leaving the server code for now
+/*
+fn main() {
+    let rt = Runtime::new().unwrap();
+    let result = rt.block_on(get_result());
+    println!("{}", result);
+}
+*/
